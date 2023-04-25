@@ -68,8 +68,8 @@ class Title(models.Model):
 
     class Meta:
         ordering = ('year',)
-        verbose_name = 'title'
-        verbose_name_plural = 'titles'
+        verbose_name = 'Произведение'
+        verbose_name_plural = 'Произведения'
 
     def __str__(self):
         return self.name
