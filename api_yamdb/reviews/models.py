@@ -46,7 +46,7 @@ class Title(models.Model):
         max_length=256,
         verbose_name='Название',
     )
-    year = models.PositiveBigIntegerField(
+    year = models.PositiveSmallIntegerField(
         validators= (year_validator,),
         verbose_name='Дата выхода',
     )
@@ -61,7 +61,7 @@ class Title(models.Model):
     )
     category = models.ForeignKey(
         Category,
-        on_delete=models.SET_NULL,
+        on_delete=models.CASCADE,
         related_name='titles',
         verbose_name='Категория',
     )
