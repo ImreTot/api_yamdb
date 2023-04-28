@@ -3,11 +3,11 @@ from django.shortcuts import get_object_or_404
 
 from rest_framework import serializers
 
-from reviews.models import Comment, Review, Title, User
+from reviews.models import Comment, Review, Title
 
 class ReviewSerializer(serializers.ModelSerializer):
     """Серилизатор для отзывов."""
-    author = serializers.SlugRelatedField(slug_field='username')
+    author = serializers.SlugRelatedField(slug_field='username', read_only=True)
     score = serializers.IntegerField(required=True)
 
     class Meta:
@@ -20,17 +20,26 @@ class ReviewSerializer(serializers.ModelSerializer):
         author = request.user
         title_id = self.context.get('view').kwargs.get('title_id')
         title = get_object_or_404(Title, id=title_id)
-        if request.method == 'POST':
-            if title.reviews.filter(title=title_id, author=author).exists():
-                raise ValidationError('Вы уже оставляли отзыв!')
+        if request.method == 'POST' and title.reviews.filter(title=title_id, author=author).exists():
+            raise ValidationError('Вы уже оставляли отзыв!')
         return data
 
 
 class CommentSerializer(serializers.ModelSerializer):
     """Серилизатор для комментариев."""
-    author = serializers.SlugRelatedField(slug_field='username')
+    author = serializers.SlugRelatedField(slug_field='username', read_only=True)
 
     class Meta:
         model = Comment
         fields = '__all__'
-        read_only_fields = ('author', 'review')
+        read_only_fields = ('review', 'author')
+
+
+class TitlePostSerializer(serializers.ModelSerializer):
+    pass
+
+
+class TitleReadSerializer(serializers.ModelSerializer):
+    rating = serializers.IntegerField(
+        source='reviews__score__avg', read_only=True
+    )
