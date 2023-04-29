@@ -3,11 +3,14 @@ from django.shortcuts import get_object_or_404
 
 from rest_framework import serializers
 
-from reviews.models import Comment, Review, Title
+from reviews.models import Comment, Review, Title, User
 
 class ReviewSerializer(serializers.ModelSerializer):
     """Серилизатор для отзывов."""
-    author = serializers.SlugRelatedField(slug_field='username', read_only=True)
+    author = serializers.SlugRelatedField(
+        queryset=User.objects.all(),        # поправить когда будет модель
+        slug_field='username'
+    )
     score = serializers.IntegerField(required=True)
 
     class Meta:
@@ -20,14 +23,20 @@ class ReviewSerializer(serializers.ModelSerializer):
         author = request.user
         title_id = self.context.get('view').kwargs.get('title_id')
         title = get_object_or_404(Title, id=title_id)
-        if request.method == 'POST' and title.reviews.filter(title=title_id, author=author).exists():
+        if (
+            request.method == "POST"
+            and title.reviews.filter(title=title_id, author=author).exists()
+        ):
             raise ValidationError('Вы уже оставляли отзыв!')
         return data
 
 
 class CommentSerializer(serializers.ModelSerializer):
     """Серилизатор для комментариев."""
-    author = serializers.SlugRelatedField(slug_field='username', read_only=True)
+    author = serializers.SlugRelatedField(
+        queryset=User.objects.all(),        # поправить когда будет модель
+        slug_field='username',
+    )
 
     class Meta:
         model = Comment

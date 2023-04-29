@@ -104,7 +104,7 @@ class Title(models.Model):
 
 
 class Review(PubDateNowModel):
-    """Моделя отзыва."""
+    """Модель отзыва."""
     
     title = models.ForeignKey(
         Title,
