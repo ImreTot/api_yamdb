@@ -1,12 +1,20 @@
-from rest_framework import serializers
 from django.contrib.auth import get_user_model
+from rest_framework import serializers
+from rest_framework.validators import UniqueValidator
 
 User = get_user_model()
 
 
 class SignupSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(required=True)
-    email = serializers.EmailField(required=True)
+    queryset = User.objects.all()
+    username = serializers.CharField(
+        required=True,
+        validators=[UniqueValidator(queryset=queryset)]
+    )
+    email = serializers.EmailField(
+        required=True,
+        validators=[UniqueValidator(queryset=queryset)]
+    )
 
     class Meta:
         model = User
@@ -18,6 +26,3 @@ class TokenSerializer(serializers.Serializer):
 
     class Meta:
         fields = ('token',)
-
-    def validate(self, attrs):
-        ...
