@@ -1,20 +1,49 @@
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
-from rest_framework import viewsets
+from django_filters.rest_framework import DjangoFilterBackend
 
-from reviews.models import Review, Title
-from .serializers import TitlePostSerializer, TitleReadSerializer, ReviewSerializer, CommentSerializer
+from rest_framework import viewsets, filters
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
 
+from reviews.models import Category, Genre, Review, Title
+from .filters import TitleFilter
+from .mixins import ListCreateDeleteViewSet
+from .permissions import IsAdminOrReadOnly
+from .serializers import (
+    CommentSerializer, CategorySerializer, GenreSerializer,
+    ReviewSerializer, TitleBaseSerializer, TitlePostSerializer
+)
 
-# https://stackoverflow.com/questions/60602349/average-for-ratings-in-django
+class CategoryViewSet(ListCreateDeleteViewSet):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('name',)
+    lookup_field = 'slug'
+    permission_classes = (IsAdminOrReadOnly,)
+
+class GenreViewSet(ListCreateDeleteViewSet):
+    queryset = Genre.objects.all()
+    serializer_class = GenreSerializer
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('name',)
+    lookup_field = 'slug'
+    permission_classes = (IsAdminOrReadOnly,)
+
 class TitleViewSet(viewsets.ModelViewSet):
-    """Вьюсет для произведений."""
-    queryset = Title.objects.all().annotate(avg_rating=Avg('reviews__score')).order_by('-avg_rating')
+    queryset = Title.objects.all().annotate(
+        avg_rating=Avg('reviews__score')).order_by('-avg_rating'
+    )
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = TitleFilter
+    permission_classes = (
+        IsAdminOrReadOnly, IsAuthenticatedOrReadOnly
+    )
 
     def get_serializer_class(self):
         if self.request.method in ['POST', 'PUT', 'PATCH']:
             return TitlePostSerializer
-        return TitleReadSerializer
+        return TitleBaseSerializer
 
 class ReviewViewSet(viewsets.ModelViewSet):
     """Вьюсет для отзывов."""
