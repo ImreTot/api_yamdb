@@ -61,7 +61,7 @@ class TitlePostSerializer(serializers.ModelSerializer):
             )
         return value
  
- class ReviewSerializer(serializers.ModelSerializer):
+class ReviewSerializer(serializers.ModelSerializer):
     """Серилизатор для отзывов."""
     author = serializers.SlugRelatedField(
         queryset=User.objects.all(),        # поправить когда будет модель
