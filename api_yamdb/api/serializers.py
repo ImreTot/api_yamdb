@@ -22,7 +22,14 @@ class SignupSerializer(serializers.ModelSerializer):
 
 
 class TokenSerializer(serializers.Serializer):
-    token = serializers.CharField(read_only=True)
 
     class Meta:
         fields = ('token',)
+
+
+class UserSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = ('username', 'email', 'first_name', 'last_name',
+                  'bio', 'role')

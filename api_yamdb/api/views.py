@@ -2,13 +2,17 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
-from rest_framework import status
+from rest_framework import status, viewsets
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 
-from .serializers import SignupSerializer, TokenSerializer
+from .serializers import (SignupSerializer, TokenSerializer,
+                          UserSerializer)
 from .validators import is_username_not_me
+from .permissions import IsAdmin
 
 User = get_user_model()
 
@@ -72,3 +76,36 @@ def api_token(request):
         return Response(serializer.initial_data, status=status.HTTP_200_OK)
     return Response({'confirmation_code': ["Invalid token"]},
                     status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserViewSet(viewsets.ModelViewSet):
+    serializer_class = UserSerializer
+    queryset = User.objects.all()
+    permission_classes = (IsAdmin,)
+    lookup_field = 'username'
+
+
+    @action(['GET', 'PATCH'],
+            url_path='me',
+            detail=False,
+            permission_classes=(IsAuthenticated,))
+    def get_data_by_owner(self, request):
+        """Метод переопределяет поведение UserViewSet
+        в случае, когда url представлен '/users/me/.'
+        """
+        serializer = UserSerializer(request.user)
+        if request.method == 'PATCH':
+            if request.user.is_admin:
+                serializer = UserSerializer(
+                    request.user,
+                    data=request.data,
+                    partial=True)
+            else:
+                serializer = UserSerializer(
+                    request.user,
+                    data=request.data,
+                    partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.data)
