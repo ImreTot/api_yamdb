@@ -24,8 +24,12 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
 
-    'reviews.apps.ReviewsConfig',
-    'users.apps.UsersConfig'
+    'rest_framework',
+    'django_filters',
+
+    'api',
+    'reviews',
+    'users.apps.UsersConfig',
 ]
 
 MIDDLEWARE = [
@@ -105,10 +109,14 @@ STATIC_URL = '/static/'
 
 STATICFILES_DIRS = ((BASE_DIR / 'static/'),)
 
+MIN_SCORE = 0
+MAX_SCORE = 10
+
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',
     ],
+
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
