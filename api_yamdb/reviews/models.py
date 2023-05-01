@@ -1,20 +1,10 @@
-'''
-При удалении объекта пользователя User должны удаляться все отзывы и комментарии этого пользователя (вместе с оценками-рейтингами).
-При удалении объекта произведения Title должны удаляться все отзывы к этому произведению и комментарии к ним.
-При удалении объекта отзыва Review должны быть удалены все комментарии к этому отзыву.
-При удалении объекта категории Category не нужно **удалять связанные с этой категорией произведения.
-При удалении объекта жанра Genre не нужно удалять связанные с этим жанром произведения.
-'''
-
 from django.conf import settings
-from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 
 from .validators import year_validator
+from users.models import User
 
-
-User = get_user_model() # заменить модель юзера
 
 class PubDateNowModel(models.Model):
     pub_date = models.DateTimeField(
@@ -99,6 +89,42 @@ class Title(models.Model):
     def __str__(self):
         return self.name
 
+
+class TitleGenre(models.Model):
+    title = models.ForeignKey(
+        Title,
+        on_delete=models.CASCADE,
+        verbose_name='Произведение'
+    )
+    genre = models.ForeignKey(
+        Genre,
+        on_delete=models.CASCADE,
+        verbose_name='Жанр'
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['title', 'genre'],
+                name='unique_title_genre_pair'
+            )
+        ]
+
+    def __str__(self):
+        return f'{self.title} {self.genre}'
+
+
+class PubDateNowModel(models.Model):
+    pub_date = models.DateTimeField(
+        'Дата публикации',
+        auto_now_add=True,
+        db_index=True,
+    )
+
+    class Meta:
+        ordering = ['-pub_date']
+        abstract = True
+        
 
 class Review(PubDateNowModel):
     """Модель отзыва."""
