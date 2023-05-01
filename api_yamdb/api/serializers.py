@@ -1,10 +1,43 @@
+from django.contrib.auth import get_user_model
+from rest_framework import serializers
+from rest_framework.validators import UniqueValidator
 from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
-from rest_framework import serializers
-
 from reviews.models import Comment, Review, Title, User, Category, Genre, Title
+
+User = get_user_model()
+
+
+class SignupSerializer(serializers.ModelSerializer):
+    queryset = User.objects.all()
+    username = serializers.CharField(
+        required=True,
+        validators=[UniqueValidator(queryset=queryset)]
+    )
+    email = serializers.EmailField(
+        required=True,
+        validators=[UniqueValidator(queryset=queryset)]
+    )
+
+    class Meta:
+        model = User
+        fields = ('username', 'email',)
+
+
+class TokenSerializer(serializers.Serializer):
+
+    class Meta:
+        fields = ('token',)
+
+
+class UserSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = ('username', 'email', 'first_name', 'last_name',
+                  'bio', 'role')
 
 
 class CategorySerializer(serializers.ModelSerializer):
