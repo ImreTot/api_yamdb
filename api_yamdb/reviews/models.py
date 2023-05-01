@@ -100,9 +100,6 @@ class Title(models.Model):
         return self.name
 
 
-# ============================================================================
-
-
 class Review(PubDateNowModel):
     """Модель отзыва."""
     
