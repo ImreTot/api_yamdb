@@ -1,4 +1,3 @@
-from django.db.models import Avg
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
@@ -18,7 +17,7 @@ from .serializers import (SignupSerializer, TokenSerializer,
                           ReviewSerializer, TitleBaseSerializer, 
                           TitlePostSerializer)
 from .validators import is_username_not_me
-from .permissions import IsAdmin, IsAdminOrReadOnly
+from .permissions import IsAdmin, IsAdminOrReadOnly, IsAuthorOrModerPlusOrReadOnly
 from .filters import TitleFilter
 from .mixins import ListCreateDeleteViewSet
 
@@ -136,9 +135,7 @@ class GenreViewSet(ListCreateDeleteViewSet):
     permission_classes = (IsAdminOrReadOnly,)
 
 class TitleViewSet(viewsets.ModelViewSet):
-    queryset = Title.objects.all().annotate(
-        avg_rating=Avg('reviews__score')).order_by('-avg_rating'
-    )
+    queryset = Title.objects.all()
     filter_backends = (DjangoFilterBackend,)
     filterset_class = TitleFilter
     permission_classes = (
@@ -153,7 +150,7 @@ class TitleViewSet(viewsets.ModelViewSet):
 class ReviewViewSet(viewsets.ModelViewSet):
     """Вьюсет для отзывов."""
     serializer_class = ReviewSerializer
-    # permission_classes = ()
+    permission_classes = (IsAuthorOrModerPlusOrReadOnly, IsAuthenticatedOrReadOnly)
 
     def get_title(self):
         id = self.kwargs.get('title_id')
@@ -168,7 +165,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
 class CommentViewSet(viewsets.ModelViewSet):
     """Вьюсет для комментариев."""
     serializer_class = CommentSerializer
-    # permission_classes = ()
+    permission_classes = (IsAuthorOrModerPlusOrReadOnly, IsAuthenticatedOrReadOnly)
 
     def get_review(self):
         id = self.kwargs.get('review_id')
