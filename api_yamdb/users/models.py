@@ -1,9 +1,15 @@
+import re
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.dispatch import receiver
+from django.contrib.auth.tokens import default_token_generator
+from django.db.models.signals import post_save
+from django.core.validators import RegexValidator
 
 USER = 'user'
 MODERATOR = 'moderator'
 ADMIN = 'admin'
+USERNAME_REGEX = r'^[\w.@+-]+$'
 
 CHOICES = (
     (USER, 'user'),
@@ -17,7 +23,12 @@ class User(AbstractUser):
         max_length=150,
         unique=True,
         blank=False,
-        null=False
+        null=False,
+        validators=[RegexValidator(
+            regex=USERNAME_REGEX,
+            message='Username should only contain letters, digits, and @/./+/-/_ characters.',
+            code='invalid_username'
+        )]
     )
     email = models.EmailField(
         unique=True,
@@ -49,6 +60,14 @@ class User(AbstractUser):
         blank=True
     )
 
+    confirmation_code = models.CharField(
+        verbose_name='код подтверждения',
+        max_length=255,
+        default='none_code',
+        null=False,
+        blank=True
+    )
+
     class Meta:
         ordering = ('id',)
         verbose_name = 'Пользователь'
@@ -68,4 +87,14 @@ class User(AbstractUser):
     @property
     def is_user(self):
         return self.role == USER
+
+
+@receiver(post_save, sender=User)
+def post_save(sender, instance, created, **kwargs):
+    if created:
+        confirmation_code = default_token_generator.make_token(
+            instance
+        )
+        instance.confirmation_code = confirmation_code
+        instance.save()
     
