@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.core.validators import RegexValidator
 from rest_framework import serializers, status
+from django.db.models import Avg
 from rest_framework.validators import UniqueValidator
 from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
@@ -84,7 +85,7 @@ class UserSerializer(serializers.ModelSerializer):
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        exclude = ('id',)
+        fields = ('name', 'slug')
         lookup_field = 'slug'
 
 
@@ -96,11 +97,14 @@ class GenreSerializer(serializers.ModelSerializer):
 
 
 class TitleBaseSerializer(serializers.ModelSerializer):
-    rating = serializers.IntegerField(
-        source='reviews__score__avg', read_only=True
-    )
-    genre = GenreSerializer(read_only=True, many=True)
-    category = CategorySerializer(read_only=True)
+    genre = GenreSerializer(many=True)
+    category = CategorySerializer()
+    rating = serializers.SerializerMethodField()
+
+    # https://django.fun/ru/docs/django/4.1/topics/db/aggregation/#:~:text=%23%20Total%20number%20of%20books%20with%20publisher%3DBaloneyPress%0A%3E%3E%3E%20Book.objects.filter(publisher__name%3D%27BaloneyPress%27).count()%0A73%0A%0A%23%20Average%20price%20across%20all%20books.%0A%3E%3E%3E%20from%20django.db.models%20import%20Avg%0A%3E%3E%3E%20Book.objects.aggregate(Avg(%27price%27))%0A%7B%27price__avg%27%3A%2034.35%7D
+    def get_rating(self, obj):
+        avg = Review.objects.filter(title=obj.id).aggregate(Avg('score'))
+        return avg['score__avg']
 
     class Meta:
         model = Title
@@ -113,7 +117,7 @@ class TitlePostSerializer(serializers.ModelSerializer):
         queryset=Genre.objects.all()
     )
     category = serializers.SlugRelatedField(
-        many=True, slug_field='slug',
+        slug_field='slug',
         queryset=Category.objects.all()
     )
 
@@ -140,10 +144,9 @@ class TitlePostSerializer(serializers.ModelSerializer):
 class ReviewSerializer(serializers.ModelSerializer):
     """Серилизатор для отзывов."""
     author = serializers.SlugRelatedField(
-        queryset=User.objects.all(),  # поправить когда будет модель
-        slug_field='username'
+        slug_field='username',
+        read_only=True,
     )
-    score = serializers.IntegerField(required=True)
 
     class Meta:
         model = Review
@@ -166,8 +169,8 @@ class ReviewSerializer(serializers.ModelSerializer):
 class CommentSerializer(serializers.ModelSerializer):
     """Серилизатор для комментариев."""
     author = serializers.SlugRelatedField(
-        queryset=User.objects.all(),  # поправить когда будет модель
         slug_field='username',
+        read_only=True,
     )
 
     class Meta:

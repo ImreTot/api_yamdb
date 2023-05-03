@@ -97,4 +97,3 @@ def post_save(sender, instance, created, **kwargs):
         )
         instance.confirmation_code = confirmation_code
         instance.save()
-    
