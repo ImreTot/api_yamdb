@@ -7,7 +7,8 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
 from reviews.models import (Comment, Review, Title,
-                            Category, Genre, Title)
+                            Category, Genre)
+CHOICES = ['user', 'moderator', 'admin']
 
 MAX_EMAIL_LENGTH = 254
 MAX_USERNAME_LENGTH = 150
@@ -58,7 +59,22 @@ class TokenSerializer(serializers.Serializer):
         fields = ('username', 'confirmation_code')
 
 
+class UserIsAdminSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = ('username', 'email', 'first_name', 'last_name',
+                  'bio', 'role')
+
+    def validate_role(self, value):
+        if value not in ['user', 'moderator', 'admin']:
+            raise status.HTTP_400_BAD_REQUEST
+        return value
+
+
 class UserSerializer(serializers.ModelSerializer):
+    role = serializers.ReadOnlyField()
+
     class Meta:
         model = User
         fields = ('username', 'email', 'first_name', 'last_name',

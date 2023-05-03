@@ -14,11 +14,11 @@ from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnl
 
 from reviews.models import Category, Genre, Review, Title
 from .serializers import (SignupSerializer, TokenSerializer,
-                          UserSerializer, CommentSerializer,
-                          CategorySerializer, GenreSerializer,
-                          ReviewSerializer, TitleBaseSerializer,
-                          TitlePostSerializer)
-from .permissions import IsAdmin, IsAdminOrReadOnly
+                          UserIsAdminSerializer, UserSerializer,
+                          CommentSerializer, CategorySerializer,
+                          GenreSerializer, ReviewSerializer,
+                          TitleBaseSerializer, TitlePostSerializer)
+from .permissions import IsAdminOrSuperuser, IsAdminOrReadOnly
 from .filters import TitleFilter
 from .mixins import ListCreateDeleteViewSet
 
@@ -91,12 +91,15 @@ def api_token(request):
 
 
 class UserViewSet(viewsets.ModelViewSet):
-    serializer_class = UserSerializer
+    serializer_class = UserIsAdminSerializer
     queryset = User.objects.all()
-    permission_classes = (IsAdmin,)
+    permission_classes = (IsAdminOrSuperuser,)
     lookup_field = 'username'
+    filter_backends = (DjangoFilterBackend, filters.SearchFilter)
+    search_fields = ('username',)
+    http_method_names = ['get', 'post', 'head', 'options', 'patch', 'delete']
 
-    @action(['GET', 'PATCH'],
+    @action(methods=['GET', 'PATCH'],
             url_path='me',
             detail=False,
             permission_classes=(IsAuthenticated,))
@@ -104,10 +107,9 @@ class UserViewSet(viewsets.ModelViewSet):
         """Метод переопределяет поведение UserViewSet
         в случае, когда url представлен '/users/me/.'
         """
-        serializer = UserSerializer(request.user)
         if request.method == 'PATCH':
-            if request.user.is_admin:
-                serializer = UserSerializer(
+            if request.user.is_admin or request.user.is_superuser:
+                serializer = UserIsAdminSerializer(
                     request.user,
                     data=request.data,
                     partial=True)
@@ -119,6 +121,8 @@ class UserViewSet(viewsets.ModelViewSet):
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
+        serializer = UserSerializer(request.user, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
         return Response(serializer.data)
 
 
