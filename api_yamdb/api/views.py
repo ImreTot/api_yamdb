@@ -3,6 +3,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
+from django.http import Http404
 from rest_framework import status, viewsets, filters
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -13,18 +14,13 @@ from rest_framework.permissions import (
 )
 
 from reviews.models import Category, Genre, Review, Title
-from .serializers import (
-    SignupSerializer, TokenSerializer,
-    UserSerializer, CommentSerializer,
-    CategorySerializer, GenreSerializer,
-    ReviewSerializer, TitleBaseSerializer,
-    TitlePostSerializer
-)
-from .validators import is_username_not_me
-from .permissions import (
-    IsAdmin, IsAdminOrReadOnly,
-    IsAuthorOrModerPlusOrReadOnly
-)
+from .serializers import (SignupSerializer, TokenSerializer,
+                          UserIsAdminSerializer, UserSerializer,
+                          CommentSerializer, CategorySerializer,
+                          GenreSerializer, ReviewSerializer,
+                          TitleBaseSerializer, TitlePostSerializer)
+from .permissions import (IsAdminOrSuperuser, IsAdminOrReadOnly,
+                          IsAdmin, IsAuthorOrModerPlusOrReadOnly)
 from .filters import TitleFilter
 from .mixins import ListCreateDeleteViewSet
 
@@ -51,24 +47,26 @@ def api_signup(request):
     который send_mail() отправляет на почту по указанному в запросе адресу.
     Отправленные письма хранятся в папке sent_emails.
     """
-    serializer = SignupSerializer(data=request.data)
-    username = is_username_not_me(request.data['username'])
-    if serializer.is_valid():
-        serializer.save()
-        user = get_object_or_404(User, username=username)
-        confirmation_code = default_token_generator.make_token(user)
-        email = request.data['email']
-        letter_header = 'Подтверждение регистрации на сайте YaMDB'
-        letter_message = (f'Здравствуйте!\n'
-                          f'Вы зарегистрировались на сайте YaMDB, '
-                          f'оставив username - {username} '
-                          f'и email - {email}.\n'
-                          f'Чтобы завершить регистрацию, '
-                          f'введите код подтверждения - '
-                          f'{confirmation_code}.')
-        send_mail(letter_header, letter_message, 'admin@YaMDB.ru', [email])
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        get_object_or_404(User, username=request.data.get('username', []),
+                          email=request.data.get('email', []))
+        return Response(request.data, status.HTTP_200_OK)
+    except Http404:
+        serializer = SignupSerializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            user = serializer.save()
+
+            letter_header = 'Подтверждение регистрации на сайте YaMDB'
+            letter_message = (f'Здравствуйте!\n'
+                              f'Вы зарегистрировались на сайте YaMDB, '
+                              f'оставив username - {user.username} '
+                              f'и email - {user.email}.\n'
+                              f'Чтобы завершить регистрацию, '
+                              f'введите код подтверждения - '
+                              f'{user.confirmation_code}.')
+            send_mail(letter_header, letter_message, 'admin@YaMDB.ru', [user.email])
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors)
 
 
 @api_view(['POST'])
@@ -81,24 +79,29 @@ def api_token(request):
     }
     Возвращает JWT-токен.
     """
-    confirmation_code = request.data['confirmation_code']
-    username = request.data['username']
-    user = User.objects.get(username=username)
+    serializer = TokenSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    data = serializer.data
+    confirmation_code = data.get('confirmation_code', [])
+    username = data.get('username', [])
+    user = get_object_or_404(User, username=username)
     if default_token_generator.check_token(user, confirmation_code):
         token = get_tokens_for_user(user)
-        serializer = TokenSerializer(data=token)
-        return Response(serializer.initial_data, status=status.HTTP_200_OK)
+        return Response(token, status=status.HTTP_200_OK)
     return Response({'confirmation_code': ["Invalid token"]},
                     status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserViewSet(viewsets.ModelViewSet):
-    serializer_class = UserSerializer
+    serializer_class = UserIsAdminSerializer
     queryset = User.objects.all()
-    permission_classes = (IsAdmin,)
+    permission_classes = (IsAdminOrSuperuser,)
     lookup_field = 'username'
+    filter_backends = (DjangoFilterBackend, filters.SearchFilter)
+    search_fields = ('username',)
+    http_method_names = ['get', 'post', 'head', 'options', 'patch', 'delete']
 
-    @action(['GET', 'PATCH'],
+    @action(methods=['GET', 'PATCH'],
             url_path='me',
             detail=False,
             permission_classes=(IsAuthenticated,))
@@ -106,10 +109,9 @@ class UserViewSet(viewsets.ModelViewSet):
         """Метод переопределяет поведение UserViewSet
         в случае, когда url представлен '/users/me/.'
         """
-        serializer = UserSerializer(request.user)
         if request.method == 'PATCH':
-            if request.user.is_admin:
-                serializer = UserSerializer(
+            if request.user.is_admin or request.user.is_superuser:
+                serializer = UserIsAdminSerializer(
                     request.user,
                     data=request.data,
                     partial=True)
@@ -121,6 +123,8 @@ class UserViewSet(viewsets.ModelViewSet):
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
+        serializer = UserSerializer(request.user, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
         return Response(serializer.data)
 
 

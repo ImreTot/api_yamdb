@@ -1,24 +1,46 @@
+from django.contrib.auth import get_user_model
+from django.core.validators import RegexValidator
+from rest_framework import serializers, status
 from django.db.models import Avg
-from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
-from reviews.models import Comment, Review, Title, Category, Genre, Title
-from users.models import User
+from reviews.models import (Comment, Review, Title,
+                            Category, Genre)
+CHOICES = ['user', 'moderator', 'admin']
+
+MAX_EMAIL_LENGTH = 254
+MAX_USERNAME_LENGTH = 150
+
+User = get_user_model()
 
 
 class SignupSerializer(serializers.ModelSerializer):
     queryset = User.objects.all()
-    username = serializers.CharField(
-        required=True,
-        validators=[UniqueValidator(queryset=queryset)]
+    username = serializers.RegexField(
+        validators=[UniqueValidator(queryset=queryset),],
+        regex=r'^[\w.@+-]',
+        required=True
     )
     email = serializers.EmailField(
-        required=True,
-        validators=[UniqueValidator(queryset=queryset)]
+        validators=[UniqueValidator(queryset=queryset),],
+        required=True
     )
+
+    def validate_username(self, value):
+        """Функция проверяет, что username - не 'me'
+        вне зависимости от регистра, а также не длиннее 150 символов."""
+        if value.lower() == 'me' or len(value) > MAX_USERNAME_LENGTH:
+            raise serializers.ValidationError('invalid username')
+        return value
+
+    def validate_email(self, value):
+        """Функция проверяет, что email не длиннее 254 символов."""
+        if len(value) > MAX_EMAIL_LENGTH:
+            raise serializers.ValidationError('email is too long.')
+        return value
 
     class Meta:
         model = User
@@ -26,12 +48,33 @@ class SignupSerializer(serializers.ModelSerializer):
 
 
 class TokenSerializer(serializers.Serializer):
+    username = serializers.CharField(
+        required=True,
+        max_length=MAX_USERNAME_LENGTH
+    )
+    confirmation_code = serializers.CharField(
+        required=True,
+    )
 
     class Meta:
-        fields = ('token',)
+        fields = ('username', 'confirmation_code')
+
+
+class UserIsAdminSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = ('username', 'email', 'first_name', 'last_name',
+                  'bio', 'role')
+
+    def validate_role(self, value):
+        if value not in ['user', 'moderator', 'admin']:
+            raise status.HTTP_400_BAD_REQUEST
+        return value
 
 
 class UserSerializer(serializers.ModelSerializer):
+    role = serializers.ReadOnlyField()
 
     class Meta:
         model = User
@@ -116,8 +159,8 @@ class ReviewSerializer(serializers.ModelSerializer):
         title_id = self.context.get('view').kwargs.get('title_id')
         title = get_object_or_404(Title, id=title_id)
         if (
-            request.method == "POST"
-            and title.reviews.filter(title=title_id, author=author).exists()
+                request.method == "POST"
+                and title.reviews.filter(title=title_id, author=author).exists()
         ):
             raise ValidationError('Вы уже оставляли отзыв!')
         return data
