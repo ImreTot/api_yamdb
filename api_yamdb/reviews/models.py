@@ -70,15 +70,17 @@ class Title(models.Model):
     )
     genre = models.ManyToManyField(
         Genre,
+        through='TitleGenre',
         related_name='titles',
         verbose_name='Жанр',
     )
     category = models.ForeignKey(
         Category,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         related_name='titles',
         verbose_name='Категория',
         null=True,
+        blank=True,
     )
 
     class Meta:
@@ -114,18 +116,6 @@ class TitleGenre(models.Model):
         return f'{self.title} {self.genre}'
 
 
-class PubDateNowModel(models.Model):
-    pub_date = models.DateTimeField(
-        'Дата публикации',
-        auto_now_add=True,
-        db_index=True,
-    )
-
-    class Meta:
-        ordering = ['-pub_date']
-        abstract = True
-        
-
 class Review(PubDateNowModel):
     """Модель отзыва."""
     
@@ -156,10 +146,12 @@ class Review(PubDateNowModel):
     )
 
     class Meta:
-        models.UniqueConstraint(
-            fields=('title', 'author'),
-            name='unique_review'
-        )
+        constraints = [
+            models.UniqueConstraint(
+                fields=['title', 'author'],
+                name='unique_review',
+            ),
+        ]
         verbose_name = 'Отзыв'
         verbose_name_plural = 'Отзывы'
 
