@@ -67,6 +67,7 @@ class TitleBaseSerializer(serializers.ModelSerializer):
         model = Title
         fields = '__all__'
 
+
 class TitlePostSerializer(serializers.ModelSerializer):
     genre = serializers.SlugRelatedField(
         many=True, slug_field='slug',
@@ -80,10 +81,10 @@ class TitlePostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Title
         fields = (
-            'id', 'name', 'year', 
+            'id', 'name', 'year',
             'description', 'genre', 'category'
         )
-    
+
     def validate_year(self, value):
         current_year = timezone.now().year
         if value > current_year:
@@ -95,7 +96,8 @@ class TitlePostSerializer(serializers.ModelSerializer):
                 'Год не может быть отрицательным.'
             )
         return value
- 
+
+
 class ReviewSerializer(serializers.ModelSerializer):
     """Серилизатор для отзывов."""
     author = serializers.SlugRelatedField(

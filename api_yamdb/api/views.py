@@ -8,16 +8,23 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
+from rest_framework.permissions import (
+    IsAuthenticated, IsAuthenticatedOrReadOnly
+)
 
 from reviews.models import Category, Genre, Review, Title
-from .serializers import (SignupSerializer, TokenSerializer,
-                          UserSerializer, CommentSerializer, 
-                          CategorySerializer, GenreSerializer,
-                          ReviewSerializer, TitleBaseSerializer, 
-                          TitlePostSerializer)
+from .serializers import (
+    SignupSerializer, TokenSerializer,
+    UserSerializer, CommentSerializer,
+    CategorySerializer, GenreSerializer,
+    ReviewSerializer, TitleBaseSerializer,
+    TitlePostSerializer
+)
 from .validators import is_username_not_me
-from .permissions import IsAdmin, IsAdminOrReadOnly, IsAuthorOrModerPlusOrReadOnly
+from .permissions import (
+    IsAdmin, IsAdminOrReadOnly,
+    IsAuthorOrModerPlusOrReadOnly
+)
 from .filters import TitleFilter
 from .mixins import ListCreateDeleteViewSet
 
@@ -91,7 +98,6 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAdmin,)
     lookup_field = 'username'
 
-
     @action(['GET', 'PATCH'],
             url_path='me',
             detail=False,
@@ -126,6 +132,7 @@ class CategoryViewSet(ListCreateDeleteViewSet):
     lookup_field = 'slug'
     permission_classes = (IsAdminOrReadOnly,)
 
+
 class GenreViewSet(ListCreateDeleteViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
@@ -133,6 +140,7 @@ class GenreViewSet(ListCreateDeleteViewSet):
     search_fields = ('name',)
     lookup_field = 'slug'
     permission_classes = (IsAdminOrReadOnly,)
+
 
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all()
@@ -147,10 +155,13 @@ class TitleViewSet(viewsets.ModelViewSet):
             return TitlePostSerializer
         return TitleBaseSerializer
 
+
 class ReviewViewSet(viewsets.ModelViewSet):
     """Вьюсет для отзывов."""
     serializer_class = ReviewSerializer
-    permission_classes = (IsAuthorOrModerPlusOrReadOnly, IsAuthenticatedOrReadOnly)
+    permission_classes = (
+        IsAuthorOrModerPlusOrReadOnly, IsAuthenticatedOrReadOnly
+    )
 
     def get_title(self):
         id = self.kwargs.get('title_id')
@@ -162,10 +173,13 @@ class ReviewViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(author=self.request.user, title=self.get_title())
 
+
 class CommentViewSet(viewsets.ModelViewSet):
     """Вьюсет для комментариев."""
     serializer_class = CommentSerializer
-    permission_classes = (IsAuthorOrModerPlusOrReadOnly, IsAuthenticatedOrReadOnly)
+    permission_classes = (
+        IsAuthorOrModerPlusOrReadOnly, IsAuthenticatedOrReadOnly
+    )
 
     def get_review(self):
         id = self.kwargs.get('review_id')

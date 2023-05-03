@@ -17,6 +17,7 @@ class PubDateNowModel(models.Model):
         ordering = ['-pub_date']
         abstract = True
 
+
 class Category(models.Model):
     name = models.CharField(
         max_length=256,
@@ -118,7 +119,7 @@ class TitleGenre(models.Model):
 
 class Review(PubDateNowModel):
     """Модель отзыва."""
-    
+
     title = models.ForeignKey(
         Title,
         on_delete=models.CASCADE,
