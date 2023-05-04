@@ -25,7 +25,8 @@ class User(AbstractUser):
         null=False,
         validators=[RegexValidator(
             regex=USERNAME_REGEX,
-            message='Username should only contain letters, digits, and @/./+/-/_ characters.',
+            message='Username should only contain letters, '
+                    'digits, and @/./+/-/_ characters.',
             code='invalid_username'
         )]
     )
