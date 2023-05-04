@@ -1,28 +1,26 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from django.http import Http404
-from rest_framework import status, viewsets, filters
-from rest_framework.decorators import api_view
+from rest_framework import filters, status, viewsets
+from rest_framework.decorators import action, api_view
+from rest_framework.permissions import (IsAuthenticated,
+                                        IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.decorators import action
-from rest_framework.permissions import (
-    IsAuthenticated, IsAuthenticatedOrReadOnly
-)
 
 from reviews.models import Category, Genre, Review, Title
-from .serializers import (SignupSerializer, TokenSerializer,
-                          UserIsAdminSerializer, UserSerializer,
-                          CommentSerializer, CategorySerializer,
-                          GenreSerializer, ReviewSerializer,
-                          TitleBaseSerializer, TitlePostSerializer)
-from .permissions import (IsAdminOrSuperuser, IsAdminOrReadOnly,
-                          IsAuthorOrModerPlusOrReadOnly)
 from .filters import TitleFilter
 from .mixins import ListCreateDeleteViewSet
+from .permissions import (IsAdminOrReadOnly, IsAdminOrSuperuser,
+                          IsAuthorOrModerPlusOrReadOnly)
+from .serializers import (CategorySerializer, CommentSerializer,
+                          GenreSerializer, ReviewSerializer, SignupSerializer,
+                          TitleBaseSerializer, TitlePostSerializer,
+                          TokenSerializer, UserIsAdminSerializer,
+                          UserSerializer)
 
 User = get_user_model()
 
@@ -64,7 +62,10 @@ def api_signup(request):
                               f'Чтобы завершить регистрацию, '
                               f'введите код подтверждения - '
                               f'{user.confirmation_code}.')
-            send_mail(letter_header, letter_message, 'admin@YaMDB.ru', [user.email])
+            send_mail(letter_header,
+                      letter_message,
+                      'admin@YaMDB.ru',
+                      [user.email])
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors)
 
@@ -123,7 +124,9 @@ class UserViewSet(viewsets.ModelViewSet):
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
-        serializer = UserSerializer(request.user, data=request.data, partial=True)
+        serializer = UserSerializer(request.user,
+                                    data=request.data,
+                                    partial=True)
         serializer.is_valid(raise_exception=True)
         return Response(serializer.data)
 

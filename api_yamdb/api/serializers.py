@@ -1,14 +1,13 @@
 from django.contrib.auth import get_user_model
-from django.core.validators import RegexValidator
-from rest_framework import serializers, status
-from django.db.models import Avg
-from rest_framework.validators import UniqueValidator
 from django.core.exceptions import ValidationError
+from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from rest_framework import serializers, status
+from rest_framework.validators import UniqueValidator
 
-from reviews.models import (Comment, Review, Title,
-                            Category, Genre)
+from reviews.models import Category, Comment, Genre, Review, Title
+
 CHOICES = ['user', 'moderator', 'admin']
 
 MAX_EMAIL_LENGTH = 254
@@ -20,12 +19,12 @@ User = get_user_model()
 class SignupSerializer(serializers.ModelSerializer):
     queryset = User.objects.all()
     username = serializers.RegexField(
-        validators=[UniqueValidator(queryset=queryset),],
+        validators=[UniqueValidator(queryset=queryset), ],
         regex=r'^[\w.@+-]',
         required=True
     )
     email = serializers.EmailField(
-        validators=[UniqueValidator(queryset=queryset),],
+        validators=[UniqueValidator(queryset=queryset), ],
         required=True
     )
 
@@ -68,6 +67,8 @@ class UserIsAdminSerializer(serializers.ModelSerializer):
                   'bio', 'role')
 
     def validate_role(self, value):
+        """Функция проверяет, что role, переданная в запросе,
+        соответствует одной из предусмотренных моделью."""
         if value not in ['user', 'moderator', 'admin']:
             raise status.HTTP_400_BAD_REQUEST
         return value
@@ -101,7 +102,6 @@ class TitleBaseSerializer(serializers.ModelSerializer):
     category = CategorySerializer()
     rating = serializers.SerializerMethodField()
 
-    # https://django.fun/ru/docs/django/4.1/topics/db/aggregation/#:~:text=%23%20Total%20number%20of%20books%20with%20publisher%3DBaloneyPress%0A%3E%3E%3E%20Book.objects.filter(publisher__name%3D%27BaloneyPress%27).count()%0A73%0A%0A%23%20Average%20price%20across%20all%20books.%0A%3E%3E%3E%20from%20django.db.models%20import%20Avg%0A%3E%3E%3E%20Book.objects.aggregate(Avg(%27price%27))%0A%7B%27price__avg%27%3A%2034.35%7D
     def get_rating(self, obj):
         avg = Review.objects.filter(title=obj.id).aggregate(Avg('score'))
         return avg['score__avg']
