@@ -6,11 +6,6 @@ class IsAdminOrSuperuser(permissions.BasePermission):
         return (request.user.is_authenticated and request.user.is_admin or
                 request.user.is_superuser)
                 
-                
-class IsStaff(permissions.BasePermission):
-    def has_permission(self, request, view):
-        return
-        
         
 class IsAdminOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):

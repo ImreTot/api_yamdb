@@ -160,7 +160,7 @@ class ReviewSerializer(serializers.ModelSerializer):
         title = get_object_or_404(Title, id=title_id)
         if (
                 request.method == "POST"
-                and title.reviews.filter(title=title_id, author=author).exists()
+                and title.reviews.filter(author=author).exists()
         ):
             raise ValidationError('Вы уже оставляли отзыв!')
         return data

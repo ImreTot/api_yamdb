@@ -20,7 +20,7 @@ from .serializers import (SignupSerializer, TokenSerializer,
                           GenreSerializer, ReviewSerializer,
                           TitleBaseSerializer, TitlePostSerializer)
 from .permissions import (IsAdminOrSuperuser, IsAdminOrReadOnly,
-                          IsAdmin, IsAuthorOrModerPlusOrReadOnly)
+                          IsAuthorOrModerPlusOrReadOnly)
 from .filters import TitleFilter
 from .mixins import ListCreateDeleteViewSet
 
@@ -129,7 +129,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
 
 class CategoryViewSet(ListCreateDeleteViewSet):
-    queryset = Category.objects.all()
+    queryset = Category.objects.get_queryset().order_by('id')
     serializer_class = CategorySerializer
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
@@ -138,7 +138,7 @@ class CategoryViewSet(ListCreateDeleteViewSet):
 
 
 class GenreViewSet(ListCreateDeleteViewSet):
-    queryset = Genre.objects.all()
+    queryset = Genre.objects.get_queryset().order_by('id')
     serializer_class = GenreSerializer
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
@@ -172,7 +172,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
         return get_object_or_404(Title, id=id)
 
     def get_queryset(self):
-        return self.get_title().reviews.all()
+        return self.get_title().reviews.all().order_by('id')
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user, title=self.get_title())
@@ -190,7 +190,7 @@ class CommentViewSet(viewsets.ModelViewSet):
         return get_object_or_404(Review, id=id)
 
     def get_queryset(self):
-        return self.get_review().comments.all()
+        return self.get_review().comments.all().order_by('id')
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user, review=self.get_review())
