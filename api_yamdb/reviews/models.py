@@ -90,6 +90,9 @@ class Title(models.Model):
         ordering = ('year',)
         verbose_name = 'Произведение'
         verbose_name_plural = 'Произведения'
+        indexes = [
+            models.Index(fields=['year'], name='year_idx'),
+        ]
 
     def __str__(self):
         return self.name
@@ -132,7 +135,7 @@ class Review(PubDateNowModel):
         User,
         on_delete=models.CASCADE,
         verbose_name='Автор отзыва',
-        related_name='review_author'
+        related_name='reviews'
     )
     score = models.PositiveSmallIntegerField(
         'Рейтинг произведения',
@@ -176,7 +179,7 @@ class Comment(PubDateNowModel):
         User,
         on_delete=models.CASCADE,
         verbose_name='Автор комментария',
-        related_name='comment_author'
+        related_name='comments'
     )
 
     class Meta:
