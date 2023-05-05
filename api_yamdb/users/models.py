@@ -1,23 +1,19 @@
 from django.contrib.auth.models import AbstractUser
-from django.contrib.auth.tokens import default_token_generator
 from django.core.validators import RegexValidator
 from django.db import models
-from django.db.models.signals import post_save
-from django.dispatch import receiver
-
-USER = 'user'
-MODERATOR = 'moderator'
-ADMIN = 'admin'
-USERNAME_REGEX = r'^[\w.@+-]+$'
-
-CHOICES = (
-    (USER, 'user'),
-    (MODERATOR, 'moderator'),
-    (ADMIN, 'admin'),
-)
 
 
 class User(AbstractUser):
+    USER = 'user'
+    MODERATOR = 'moderator'
+    ADMIN = 'admin'
+    USERNAME_REGEX = r'^[\w.@+-]+$'
+    CHOICES = (
+        (USER, 'user'),
+        (MODERATOR, 'moderator'),
+        (ADMIN, 'admin'),
+    )
+
     username = models.CharField(
         max_length=150,
         unique=True,
@@ -33,8 +29,6 @@ class User(AbstractUser):
     email = models.EmailField(
         unique=True,
         max_length=254,
-        blank=False,
-        null=False,
     )
     first_name = models.CharField(
         verbose_name='Имя',
@@ -59,7 +53,6 @@ class User(AbstractUser):
         verbose_name='Биография',
         blank=True
     )
-
     confirmation_code = models.CharField(
         verbose_name='код подтверждения',
         max_length=255,
@@ -69,7 +62,6 @@ class User(AbstractUser):
     )
 
     class Meta:
-        ordering = ('id',)
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
 
@@ -78,22 +70,12 @@ class User(AbstractUser):
 
     @property
     def is_admin(self):
-        return self.role == ADMIN
+        return self.role == self.ADMIN
 
     @property
     def is_moderator(self):
-        return self.role == MODERATOR
+        return self.role == self.MODERATOR
 
     @property
     def is_user(self):
-        return self.role == USER
-
-
-@receiver(post_save, sender=User)
-def post_save(sender, instance, created, **kwargs):
-    if created:
-        confirmation_code = default_token_generator.make_token(
-            instance
-        )
-        instance.confirmation_code = confirmation_code
-        instance.save()
+        return self.role == self.USER

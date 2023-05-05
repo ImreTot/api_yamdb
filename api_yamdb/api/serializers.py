@@ -3,15 +3,11 @@ from django.core.exceptions import ValidationError
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from rest_framework import serializers, status
+from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 
 from reviews.models import Category, Comment, Genre, Review, Title
-
-CHOICES = ['user', 'moderator', 'admin']
-
-MAX_EMAIL_LENGTH = 254
-MAX_USERNAME_LENGTH = 150
+from api_yamdb.settings import MAX_EMAIL_LENGTH, MAX_USERNAME_LENGTH
 
 User = get_user_model()
 
@@ -55,9 +51,6 @@ class TokenSerializer(serializers.Serializer):
         required=True,
     )
 
-    class Meta:
-        fields = ('username', 'confirmation_code')
-
 
 class UserIsAdminSerializer(serializers.ModelSerializer):
 
@@ -65,13 +58,6 @@ class UserIsAdminSerializer(serializers.ModelSerializer):
         model = User
         fields = ('username', 'email', 'first_name', 'last_name',
                   'bio', 'role')
-
-    def validate_role(self, value):
-        """Функция проверяет, что role, переданная в запросе,
-        соответствует одной из предусмотренных моделью."""
-        if value not in ['user', 'moderator', 'admin']:
-            raise status.HTTP_400_BAD_REQUEST
-        return value
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -159,7 +145,7 @@ class ReviewSerializer(serializers.ModelSerializer):
         title_id = self.context.get('view').kwargs.get('title_id')
         title = get_object_or_404(Title, id=title_id)
         if (
-                request.method == "POST"
+                request.method == 'POST'
                 and title.reviews.filter(author=author).exists()
         ):
             raise ValidationError('Вы уже оставляли отзыв!')

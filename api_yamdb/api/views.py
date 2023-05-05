@@ -1,7 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
-from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status, viewsets
@@ -12,6 +11,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from reviews.models import Category, Genre, Review, Title
+from api_yamdb.settings import ADMIN_EMAIL
 from .filters import TitleFilter
 from .mixins import ListCreateDeleteViewSet
 from .permissions import (IsAdminOrReadOnly, IsAdminOrSuperuser,
@@ -23,6 +23,26 @@ from .serializers import (CategorySerializer, CommentSerializer,
                           UserSerializer)
 
 User = get_user_model()
+
+
+def create_confirmation_code_and_email(user):
+    confirmation_code = default_token_generator.make_token(
+        user
+    )
+    user.confirmation_code = confirmation_code
+    user.save()
+    letter_header = 'Подтверждение регистрации на сайте YaMDB'
+    letter_message = (f'Здравствуйте!\n'
+                      f'Вы зарегистрировались на сайте YaMDB, '
+                      f'оставив username - {user.username} '
+                      f'и email - {user.email}.\n'
+                      f'Чтобы завершить регистрацию, '
+                      f'введите код подтверждения - '
+                      f'{user.confirmation_code}.')
+    send_mail(letter_header,
+              letter_message,
+              ADMIN_EMAIL,
+              [user.email])
 
 
 def get_tokens_for_user(user):
@@ -45,29 +65,14 @@ def api_signup(request):
     который send_mail() отправляет на почту по указанному в запросе адресу.
     Отправленные письма хранятся в папке sent_emails.
     """
-    try:
-        get_object_or_404(User, username=request.data.get('username', []),
-                          email=request.data.get('email', []))
+    if User.objects.filter(username=request.data.get('username', []),
+                           email=request.data.get('email', [])).exists():
         return Response(request.data, status.HTTP_200_OK)
-    except Http404:
-        serializer = SignupSerializer(data=request.data)
-        if serializer.is_valid(raise_exception=True):
-            user = serializer.save()
-
-            letter_header = 'Подтверждение регистрации на сайте YaMDB'
-            letter_message = (f'Здравствуйте!\n'
-                              f'Вы зарегистрировались на сайте YaMDB, '
-                              f'оставив username - {user.username} '
-                              f'и email - {user.email}.\n'
-                              f'Чтобы завершить регистрацию, '
-                              f'введите код подтверждения - '
-                              f'{user.confirmation_code}.')
-            send_mail(letter_header,
-                      letter_message,
-                      'admin@YaMDB.ru',
-                      [user.email])
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors)
+    serializer = SignupSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    user = serializer.save()
+    create_confirmation_code_and_email(user)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 @api_view(['POST'])
@@ -89,7 +94,7 @@ def api_token(request):
     if default_token_generator.check_token(user, confirmation_code):
         token = get_tokens_for_user(user)
         return Response(token, status=status.HTTP_200_OK)
-    return Response({'confirmation_code': ["Invalid token"]},
+    return Response({'confirmation_code': ['Invalid token']},
                     status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -132,7 +137,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
 
 class CategoryViewSet(ListCreateDeleteViewSet):
-    queryset = Category.objects.get_queryset().order_by('id')
+    queryset = Category.objects.get_queryset()
     serializer_class = CategorySerializer
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
@@ -141,7 +146,7 @@ class CategoryViewSet(ListCreateDeleteViewSet):
 
 
 class GenreViewSet(ListCreateDeleteViewSet):
-    queryset = Genre.objects.get_queryset().order_by('id')
+    queryset = Genre.objects.get_queryset()
     serializer_class = GenreSerializer
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
@@ -175,7 +180,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
         return get_object_or_404(Title, id=id)
 
     def get_queryset(self):
-        return self.get_title().reviews.all().order_by('id')
+        return self.get_title().reviews.all()
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user, title=self.get_title())
@@ -193,7 +198,7 @@ class CommentViewSet(viewsets.ModelViewSet):
         return get_object_or_404(Review, id=id)
 
     def get_queryset(self):
-        return self.get_review().comments.all().order_by('id')
+        return self.get_review().comments.all()
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user, review=self.get_review())

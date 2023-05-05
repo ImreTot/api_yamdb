@@ -11,7 +11,7 @@ class TitleFilter(django_filters.FilterSet):
         field_name='genre__slug'
     )
     name = django_filters.CharFilter(
-        field_name='name', lookup_expr='contains'
+        field_name='name', lookup_expr='istartswith'
     )
     year = django_filters.NumberFilter(
         field_name='year'

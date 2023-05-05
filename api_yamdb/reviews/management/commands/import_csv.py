@@ -11,14 +11,14 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         for row in DictReader(open('static/data/category.csv',
-                                   encoding="utf8")):
+                                   encoding='utf8')):
             category = Category(name=row['name'], id=row['id'],
                                 slug=row['slug'])
             category.save()
-        for row in DictReader(open('static/data/genre.csv', encoding="utf8")):
+        for row in DictReader(open('static/data/genre.csv', encoding='utf8')):
             genre = Genre(name=row['name'], id=row['id'], slug=row['slug'])
             genre.save()
-        for row in DictReader(open('static/data/titles.csv', encoding="utf8")):
+        for row in DictReader(open('static/data/titles.csv', encoding='utf8')):
             title = Title(
                 name=row['name'],
                 id=row['id'],
@@ -27,14 +27,14 @@ class Command(BaseCommand):
             )
             title.save()
         for row in DictReader(open('static/data/genre_title.csv',
-                                   encoding="utf8")):
+                                   encoding='utf8')):
             genre_title = TitleGenre(
                 id=row['id'],
                 title=Title.objects.get(pk=row['title_id']),
                 genre=Genre.objects.get(pk=row['genre_id'])
             )
             genre_title.save()
-        for row in DictReader(open('static/data/users.csv', encoding="utf8")):
+        for row in DictReader(open('static/data/users.csv', encoding='utf8')):
             user = User(
                 id=row['id'],
                 username=row['username'],
@@ -45,7 +45,7 @@ class Command(BaseCommand):
                 last_name=row['last_name']
             )
             user.save()
-        for row in DictReader(open('static/data/titles.csv', encoding="utf8")):
+        for row in DictReader(open('static/data/titles.csv', encoding='utf8')):
             title = Title(
                 name=row['name'],
                 id=row['id'],
@@ -54,7 +54,7 @@ class Command(BaseCommand):
             )
             title.save()
         for row in DictReader(open('static/data/review.csv',
-                                   encoding="utf8")):
+                                   encoding='utf8')):
             review = Review(
                 id=row['id'],
                 title=Title.objects.get(pk=row['title_id']),
@@ -65,7 +65,7 @@ class Command(BaseCommand):
             )
             review.save()
         for row in DictReader(open('static/data/comments.csv',
-                                   encoding="utf8")):
+                                   encoding='utf8')):
             comment = Comment(
                 id=row['id'],
                 review=Review.objects.get(pk=row['review_id']),
