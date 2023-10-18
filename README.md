@@ -29,10 +29,17 @@ python manage.py makemigrations
 python manage.py migrate
 ```
 
+## Postman collection for API
+The `Ymdb-collection.postman_collection.json` file in root directory contains the postman collection - a set of pre-prepared API queries.
+### Loading a collection in Postman:
+- Launch Postman;
+- In the upper left corner, click File -> Import;
+- A pop-up window will ask you to drag a file with a collection into it or select a file through the file manager window. Load the Ymdb-collection.postman_collection.json file into Postman.
+
 ## About us
-- [Roman Kiiashko][Roman] wrote a registration and authentication system, access rights, working with a token, and a confirmation system via e-mail.  
-- [Valiria Kolesnikova][Valeria] prepared models, views and endpoints for works, categories, genres. Implemented data import from csv files.  
-- [destiny986][destiny986] worked on reviews, comments, and ratings of works.
+[Roman Kiiashko][Roman] wrote a registration and authentication system, access rights, working with a token, and a confirmation system via e-mail.  
+[Valiria Kolesnikova][Valeria] prepared models, views and endpoints for works, categories, genres. Implemented data import from csv files.  
+[destiny986][destiny986] worked on reviews, comments, and ratings of works.
 
 ## License
 
