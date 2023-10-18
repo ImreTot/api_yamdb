@@ -31,7 +31,7 @@ python manage.py migrate
 
 ## License
 
-MIT
+MIT  
 **Free Software, Hell Yeah!**
 
 [YaMDB-templates]: <https://github.com/ImreTot/YaMDB-templates>
