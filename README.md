@@ -29,9 +29,17 @@ python manage.py makemigrations
 python manage.py migrate
 ```
 
+## About us
+- [Roman Kiiashko][Roman] wrote a registration and authentication system, access rights, working with a token, and a confirmation system via e-mail.  
+- [Valiria Kolesnikova][Valeria] prepared models, views and endpoints for works, categories, genres. Implemented data import from csv files.  
+- [destiny986][destiny986] worked on reviews, comments, and ratings of works.
+
 ## License
 
 MIT  
 **Free Software, Hell Yeah!**
 
 [YaMDB-templates]: <https://github.com/ImreTot/YaMDB-templates>
+[Roman]:<https://github.com/ImreTot>
+[Valeria]:<https://github.com/ValeriaKolesnikova>
+[destiny986]:<https://github.com/destiny986>
