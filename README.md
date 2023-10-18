@@ -13,7 +13,7 @@ Get source
 ```sh
 git clone git@github.com:ImreTot/api_final_yatube.git
 ```
-Make virtual environment
+In this project we use python3.9. Make virtual environment
 ```sh
 python3 -m venv venv
 source venv/bin/activate
